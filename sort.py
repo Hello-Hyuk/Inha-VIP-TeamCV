@@ -14,9 +14,9 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
+    
 """
-#재ㅇㅇㅇㅇ혁 주석
+#
 from __future__ import print_function
 
 import os
@@ -34,7 +34,7 @@ from filterpy.kalman import KalmanFilter
 
 np.random.seed(0)
 
-
+#for hungarian algorithm
 def linear_assignment(cost_matrix):
   try:
     import lap
@@ -67,9 +67,9 @@ def iou_batch(bb_test, bb_gt):
 
 def convert_bbox_to_z(bbox):
   """
-  Takes a bounding box in the form [x1,y1,x2,y2] and returns z in the form
-    [x,y,s,r] where x,y is the centre of the box and s is the scale/area and r is
-    the aspect ratio
+  박스 정보를 아래와 같이 convert
+  z = [center x,y 좌표 , 박스 크기, 너비/높이 비율]
+  
   """
   w = bbox[2] - bbox[0]
   h = bbox[3] - bbox[1]
@@ -82,8 +82,7 @@ def convert_bbox_to_z(bbox):
 
 def convert_x_to_bbox(x,score=None):
   """
-  Takes a bounding box in the centre form [x,y,s,r] and returns it in the form
-    [x1,y1,x2,y2] where x1,y1 is the top left and x2,y2 is the bottom right
+  z 정보를 통해 bbox 왼쪽 위 오른쪽 아래 좌표 변환
   """
   w = np.sqrt(x[2] * x[3])
   h = x[2] / w
@@ -103,17 +102,35 @@ class KalmanBoxTracker(object):
     Initialises a tracker using initial bounding box.
     """
     #define constant velocity model
-    self.kf = KalmanFilter(dim_x=7, dim_z=4) 
-    self.kf.F = np.array([[1,0,0,0,1,0,0],[0,1,0,0,0,1,0],[0,0,1,0,0,0,1],[0,0,0,1,0,0,0],  [0,0,0,0,1,0,0],[0,0,0,0,0,1,0],[0,0,0,0,0,0,1]])
-    self.kf.H = np.array([[1,0,0,0,0,0,0],[0,1,0,0,0,0,0],[0,0,1,0,0,0,0],[0,0,0,1,0,0,0]])
-
+    #dim_x : size of the state vector 
+    #dim_z : size of the measurement vector
+    self.kf = KalmanFilter(dim_x=7, dim_z=4)
+    
+    #  F : ndarray (dim_x, dim_x) /state transistion matrix
+    self.kf.F = np.array([[1,0,0,0,1,0,0],
+                          [0,1,0,0,0,1,0],
+                          [0,0,1,0,0,0,1],
+                          [0,0,0,1,0,0,0],
+                          [0,0,0,0,1,0,0],
+                          [0,0,0,0,0,1,0],
+                          [0,0,0,0,0,0,1]])
+    # H : ndarray (dim_z, dim_x) /measurement function
+    self.kf.H = np.array([[1,0,0,0,0,0,0],
+                          [0,1,0,0,0,0,0],
+                          [0,0,1,0,0,0,0],
+                          [0,0,0,1,0,0,0]])
+    # R : ndarray (dim_z, dim_z), default eye(dim_x) /measurement uncertainty/noise
     self.kf.R[2:,2:] *= 10.
+    # P : ndarray (dim_x, dim_x), default eye(dim_x) /covariance matrix
     self.kf.P[4:,4:] *= 1000. #give high uncertainty to the unobservable initial velocities
     self.kf.P *= 10.
+    #Q : ndarray (dim_x, dim_x), default eye(dim_x) /Process uncertainty/noise
     self.kf.Q[-1,-1] *= 0.01
     self.kf.Q[4:,4:] *= 0.01
-
-    self.kf.x[:4] = convert_bbox_to_z(bbox)
+    #x : ndarray (dim_x, 1), default = [0,0,0…0] /filter state estimate
+    self.kf.x[:4] = convert_bbox_to_z(bbox) # [x,y,s,r]
+    
+    # stage 변경시 count 증가
     self.time_since_update = 0
     self.id = KalmanBoxTracker.count
     KalmanBoxTracker.count += 1
