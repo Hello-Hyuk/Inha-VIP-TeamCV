@@ -1,8 +1,11 @@
 import cv2
 import numpy as np
 
+
 x_size = 600
 y_size = 400
+
+bbox1 = [0.387, ]
 
 def onMouse(event, x, y, flags, param) :
     if event == cv2.EVENT_LBUTTONDOWN :
@@ -13,13 +16,20 @@ def bird_eye_view(frame):
     # pts1, pts2 is ROI
     pts1 = np.float32([[214, 260], [459, 279], [7, 375], [539, 375]])
     pts2 = np.float32([[0, 0], [x_size, 0], [0, y_size], [x_size, y_size]])
+    car = (299, 308, 1)
+    #print(car)
     matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    #print(matrix)
     frame = cv2.warpPerspective(frame, matrix, (x_size, y_size))
+    frame2 = np.dot(matrix, car)
+    print(frame2)
+    frame2 = frame2 / frame2[2];
+    print(frame2)
     return frame
 
 def scharr_filter(frame):
     img_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # gray scale
-
+ 
     #sobel x,y filtering for gradient detection ====
     img_scharr_x = cv2.Scharr(img_gray, cv2.CV_64F, 1, 0)
     img_scharr_x = cv2.convertScaleAbs(img_scharr_x)
@@ -39,13 +49,16 @@ img = cv2.imread('test1.jpg')
 
 img = cv2.resize(img,(600,400))
 cv2.imshow('car', img)
+cv2.imshow('car', img)
 cv2.setMouseCallback('car', onMouse)
+img = bird_eye_view(img)
+cv2.imshow('car2', img)
+cv2.setMouseCallback('car2', onMouse)
 cv2.waitKey()
 
-img = bird_eye_view(img)
 img = scharr_filter(img)
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-median_img=cv2.medianBlur(img, 5)
+median_img=cv2.medianBlur(img,5)
 color_filtered_img = cv2.dilate(median_img, kernel)
 cv2.imshow('3-3. Thickened image', color_filtered_img)
 cv2.imshow("image", img)
