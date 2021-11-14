@@ -1,36 +1,14 @@
 import cv2 as cv
 import numpy as np
-x_size = 600
-y_size = 600
-
 # find coordinate
 def onMouse(event, x, y, flags, param) :
     if event == cv.EVENT_LBUTTONDOWN :
         print('왼쪽 마우스 클릭 했을 때 좌표 : ', x, y)
 
+x_size = 600
+y_size = 400
 # const ROI좌표 
 #nx, ny, nw, nh
-bbox1 = [0.4046875, 0.840625, 0.503125, 0.24375]
-bbox2 = [0.623924, 0.532232, 0.503125, 0.24375]
-#x1,y1
-#x2,y2
-#w, h
-#norm (nx,ny) = (((x1+x2)/2)/w) , ((y1+y2)/2)/h))
-#nx = ((x1+x2)/2)/w
-
-#nw = (x2 - x1)/w
-#nh = (y2 - y1)/h
-
-# w * nx * 2 = x1 + x2 = ax/ 
-# /2 = c_x 
-# h * ny * 2 = y1 + y2 = ay /2 = c_y
-
-# (ax - bx)/2 = x1
-# (ax + bx)/2 = x2  
-# (ay - by)/2 = y1
-# (ay + by)/2 = y2
-
-x1,y1 x2,y2
 #ROI 정보 
 x1 =
 x2 =
@@ -46,66 +24,66 @@ def find_box_center(bbox, img):
     cy = height * bbox[1] 
     c_position = (cx,cy)
     return c_position
-    
-# perspective transfer
+import cv2
+import numpy as np
+
+
+x_size = 600
+y_size = 400
+
+def onMouse(event, x, y, flags, param) :
+    if event == cv2.EVENT_LBUTTONDOWN :
+        print('왼쪽 마우스 클릭 했을 때 좌표 : ', x, y)
+
+
 def bird_eye_view(frame):
     # pts1, pts2 is ROI
-    ROI = np.float32([[x1, y1], [x2, y1], [x3, y2], [x4, y2]])
-    #pts1 = np.float32([[230, 150], [370, 150], [20, 280], [580, 280]])
-    T_ROI = np.float32([[0, 0], [x_size, 0], [0, y_size], [x_size, y_size]])
-    matrix = cv.getPerspectiveTransform(ROI, pts2)
-    print("matrix\n",matrix)
-    matrix_inv = cv.getPerspectiveTransform(pts2, ROI)
-    frame = cv.warpPerspective(frame, matrix, (x_size, y_size))
-    
+    pts1 = np.float32([[214, 260], [459, 279], [7, 375], [539, 375]])
+    pts2 = np.float32([[0, 0], [x_size, 0], [0, y_size], [x_size, y_size]])
+    car = (299, 308, 1)
+    #print(car)
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    #print(matrix)
+    frame = cv2.warpPerspective(frame, matrix, (x_size, y_size))
+    frame2 = np.dot(matrix, car)
+    print(frame2)
+    frame2 = frame2 / frame2[2];
+    print(frame2)
     return frame
 
-# scharr_filter
 def scharr_filter(frame):
-    img_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY) # gray scale
-
+    img_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # gray scale
+ 
     #sobel x,y filtering for gradient detection ====
-    img_scharr_x = cv.Scharr(img_gray, cv.CV_64F, 1, 0)
-    img_scharr_x = cv.convertScaleAbs(img_scharr_x)
-    img_scharr_x2 = cv.Scharr(img_gray, cv.CV_64F, 0, 1)
-    img_scharr_x2 = cv.convertScaleAbs(img_scharr_x2)
-    #img_scharr_y = cv.Scharr(img_gray, cv.CV_64F, 0, 1)
-    #img_scharr_y = cv.convertScaleAbs(img_scharr_y)
+    img_scharr_x = cv2.Scharr(img_gray, cv2.CV_64F, 1, 0)
+    img_scharr_x = cv2.convertScaleAbs(img_scharr_x)
+    img_scharr_x2 = cv2.Scharr(img_gray, cv2.CV_64F, 0, 1)
+    img_scharr_x2 = cv2.convertScaleAbs(img_scharr_x2)
+    #img_scharr_y = cv2.Scharr(img_gray, cv2.CV_64F, 0, 1)
+    #img_scharr_y = cv2.convertScaleAbs(img_scharr_y)
     #sobel x,y = sobel x + sobel y
-    img_scharr = cv.addWeighted(img_scharr_x, 1, img_scharr_x2, 1, 0)
-    #img_scharr = cv.addWeighted(img_scharr, 1, img_scharr_y, 1, 0)
+    img_scharr = cv2.addWeighted(img_scharr_x, 1, img_scharr_x2, 1, 0)
+    #img_scharr = cv2.addWeighted(img_scharr, 1, img_scharr_y, 1, 0)
     # detecting white mark and yellow mark
     # first,
-    _, white_line = cv.threshold(img_scharr, 150, 255, cv.THRESH_BINARY)
+    _, white_line = cv2.threshold(img_scharr, 150, 255, cv2.THRESH_BINARY)
     return white_line
 
-img = cv.imread('test.jpg')
-dst = cv.resize(img,(600,400),interpolation=cv.INTER_AREA)
-bevimg = bird_eye_view(dst)
-sfimg = scharr_filter(bevimg)
-median_img=cv.medianBlur(sfimg, 5)
+img = cv2.imread('test1.jpg')
 
-#thickend image
-kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
-color_filtered_img = cv.dilate(median_img, kernel)
+img = cv2.resize(img,(600,400))
+cv2.imshow('car', img)
+cv2.imshow('car', img)
+cv2.setMouseCallback('car', onMouse)
+img = bird_eye_view(img)
+cv2.imshow('car2', img)
+cv2.setMouseCallback('car2', onMouse)
+cv2.waitKey()
 
-#find coordinate
-#마우스 좌클릭을 통해 좌표 확인
-cv.imshow('image', img)
-cv.setMouseCallback('image', onMouse)
-cv.waitKey()
-
-#show img
-
-cv.imshow('perspective tranformation', bevimg)
-#cv.setMouseCallback('image', onMouse)
-cv.waitKey() 
-
-cv.imshow('scharr filtered image', sfimg)
-cv.waitKey()
-
-cv.imshow('median image', median_img)
-cv.waitKey()
-
-cv.imshow('3-3. Thickened image', color_filtered_img)
-cv.waitKey()
+#img = scharr_filter(img)
+#kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#median_img=cv2.medianBlur(img,5)
+#color_filtered_img = cv2.dilate(median_img, kernel)
+#cv2.imshow('3-3. Thickened image', color_filtered_img)
+#cv2.imshow("image", img)
+#cv2.waitKey()
