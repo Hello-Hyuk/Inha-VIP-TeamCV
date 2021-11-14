@@ -5,8 +5,6 @@ import numpy as np
 x_size = 600
 y_size = 400
 
-bbox1 = [0.387, ]
-
 def onMouse(event, x, y, flags, param) :
     if event == cv2.EVENT_LBUTTONDOWN :
         print('왼쪽 마우스 클릭 했을 때 좌표 : ', x, y)
@@ -56,10 +54,10 @@ cv2.imshow('car2', img)
 cv2.setMouseCallback('car2', onMouse)
 cv2.waitKey()
 
-img = scharr_filter(img)
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-median_img=cv2.medianBlur(img,5)
-color_filtered_img = cv2.dilate(median_img, kernel)
-cv2.imshow('3-3. Thickened image', color_filtered_img)
-cv2.imshow("image", img)
-cv2.waitKey()
+#img = scharr_filter(img)
+#kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#median_img=cv2.medianBlur(img,5)
+#color_filtered_img = cv2.dilate(median_img, kernel)
+#cv2.imshow('3-3. Thickened image', color_filtered_img)
+#cv2.imshow("image", img)
+#cv2.waitKey()
