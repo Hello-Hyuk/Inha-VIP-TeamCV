@@ -1,3 +1,29 @@
+import cv2 as cv
+import numpy as np
+# find coordinate
+def onMouse(event, x, y, flags, param) :
+    if event == cv.EVENT_LBUTTONDOWN :
+        print('왼쪽 마우스 클릭 했을 때 좌표 : ', x, y)
+
+x_size = 600
+y_size = 400
+# const ROI좌표 
+#nx, ny, nw, nh
+#ROI 정보 
+x1 =
+x2 =
+x3 =
+x4 =
+y1 =
+y2 =
+
+def find_box_center(bbox, img):
+    width = img.cols
+    height = img.rows
+    cx = width * bbox[0]
+    cy = height * bbox[1] 
+    c_position = (cx,cy)
+    return c_position
 import cv2
 import numpy as np
 
