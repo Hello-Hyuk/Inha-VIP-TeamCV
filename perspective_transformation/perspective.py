@@ -2,11 +2,13 @@ import cv2 as cv
 import numpy as np
 
 bbox = [0.4958, 0.7775, 0.10166, 0.11]
+
 width = 600
 height = 400
 
 def find_distance(bbox, frame):
     #normalized 된 bbox 좌표를 원본 좌표로 변환하여 박스 중앙값 구하기
+
     cx = width * bbox[0]
     cy = height * bbox[1] 
     c_position = (cx,cy, 1)
@@ -20,7 +22,7 @@ def find_distance(bbox, frame):
     matrix = cv.getPerspectiveTransform(pts1, pts2)
     
     # 영상 시점변환
-    frame = cv.warpPerspective(frame, matrix, width, height)
+    frame = cv.warpPerspective(frame, matrix, (width, height))
     
     # bbox 중점 시점변환
     trans_c_position = np.dot(matrix, c_position)
