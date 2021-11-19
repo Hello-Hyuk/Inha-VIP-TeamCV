@@ -16,7 +16,8 @@ def find_distance(bbox, frame):
     
     # pts1, pts2 is ROI
     # pts1은 임의로 지정한 4개의 콘 영역이다
-    pts1 = np.float32([[214, 260], [459, 279], [7, 375], [539, 375]])
+    [[457, 279], [612, 282], [147, 720], [955, 720]]
+    pts1 = np.float32([[457, 279], [612, 282], [147, 720], [955, 720]])
     pts2 = np.float32([[0, 0], [width, 0], [0,height], [width, height]])
     # ROI 사이의 homography 
     matrix = cv.getPerspectiveTransform(pts1, pts2)
