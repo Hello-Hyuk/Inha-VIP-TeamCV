@@ -1,10 +1,10 @@
 import cv2 as cv
 import numpy as np
 
-bbox = [0.4958, 0.7775, 0.10166, 0.11]
+bbox = [0.27544, 0.43055, 0.05647, 0.061111]
 
-width = 600
-height = 400
+width = 1080
+height = 720
 
 def find_distance(bbox, frame):
     #normalized 된 bbox 좌표를 원본 좌표로 변환하여 박스 중앙값 구하기
