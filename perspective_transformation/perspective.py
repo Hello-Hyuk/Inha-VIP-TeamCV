@@ -33,6 +33,8 @@ def find_distance(bbox, frame):
 
 img = cv.imread('test1.jpg')
 img = cv.resize(img,(600,400))
+print(cv.__version__)
+print(np.__version__)
 cv.imshow('car', img)
 distance = find_distance(bbox, img)
 print("distance",distance)
