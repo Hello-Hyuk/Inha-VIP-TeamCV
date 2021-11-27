@@ -87,28 +87,6 @@ void TestSORT(bool display)
 	cout << "Processing " << seqName << "..." << endl;
 	
 	// 변수들
-	vector<TrackingBox> detData;
-	
-	while (total_frames < detData.frame){
-		// 1. input real-time bbox
-		float tpx, tpy, tpw, tph;
-
-		tb.box = Rect_<float>(Point_<float>(tpx, tpy), Point_<float>(tpx + tpw, tpy + tph));
-		detData.push_back(tb);
-	
-		// 2. update frame
-		int Frame = tb.frame;
-
-		vector<vector<TrackingBox>> detFrameData;
-
-		// frame당 detect 한 bbox값 저장
-		for (auto tb : detData)
-			tempVec.push_back(tb);
-		detFrameData.push_back(tempVec);
-		tempVec.clear();
-	}
-	detData.clear();
-	
 	
 	// 3. update across frames
 	int frame_count = 0;
@@ -134,17 +112,37 @@ void TestSORT(bool display)
 	double cycle_time = 0.0;
 	int64 start_time = 0;
 
-	//////////////////////////////////////////////
-	// main loop
-	for (;;)
-	{
-		total_frames++;
-		frame_count++;
-		//cout << frame_count << endl;
+	while (1){
+    // ros로 부터 가져오는 data값
+    vector<TrackingBox> getdetData;
+    vector<TrackingBox> detData;
+    if(total_frames == getdetData.frame){
+      break;
+    }
 
-		// I used to count running time using clock(), but found it seems to conflict with cv::cvWaitkey(),
-		// when they both exists, clock() can not get right result. Now I use cv::getTickCount() instead.
-		start_time = getTickCount();
+    total_frames++;
+		frame_count++;
+
+    // update frame
+		int Frame = frame_count;
+    
+		// 1. input real-time bbox
+		float tpx, tpy, tpw, tph;
+    TrackingBox temptb;
+    for (auto tb : getdetData)
+		  temptb.box = Rect_<float>(Point_<float>(tb.box.x, tb.box.y), 
+                            Point_<float>(tb.box.x + tb.box.width, tb.box.y + tb.box.height));
+		  detData.push_back(temptb);
+	
+		vector<vector<TrackingBox>> detFrameData;
+		// frame당 detect 한 bbox값 저장
+		for (auto tb : detData)
+			tempVec.push_back(tb);
+		detFrameData.push_back(tempVec);
+		tempVec.clear();
+
+    ////////////////main algorithm//////////////////
+    start_time = getTickCount();
 
 		if (trackers.size() == 0) // the first frame met
 		{
@@ -297,4 +295,11 @@ void TestSORT(bool display)
 			cout << tb.frame << "," << tb.id << "," 
 			<< tb.box.x << "," << tb.box.y << "," 
 			<< tb.box.width << "," << tb.box.height << endl;
+    
+    getdetData.clear();
+    detData.clear();
+	}
+	
 }
+
+// default bbox 와 IOU 비교하여 잘못 detect된 IOU 제거하기
