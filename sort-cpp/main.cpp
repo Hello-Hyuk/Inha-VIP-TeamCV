@@ -65,6 +65,10 @@ double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 int total_frames = 0;
 double total_time = 0.0;
 
+// gt to compare 
+Rect_<float> bb_center(200,200,400,400);
+int bb_iou_th = 0.3;
+
 void TestSORT(bool display);
 
 
@@ -130,10 +134,15 @@ void TestSORT(bool display)
 		float tpx, tpy, tpw, tph;
     TrackingBox temptb;
     for (auto tb : getdetData)
-		  temptb.box = Rect_<float>(Point_<float>(tb.box.x, tb.box.y), 
+      if(GetIOU(bb_center, getdetData[Frame][tb].box) < bb_iou_th){
+        getdetData.[Frame][tb].erase();
+      }
+      else{
+        temptb.box = Rect_<float>(Point_<float>(tb.box.x, tb.box.y), 
                             Point_<float>(tb.box.x + tb.box.width, tb.box.y + tb.box.height));
-		  detData.push_back(temptb);
-	
+		    detData.push_back(temptb);
+      }
+		  
 		vector<vector<TrackingBox>> detFrameData;
 		// frame당 detect 한 bbox값 저장
 		for (auto tb : detData)
@@ -297,10 +306,7 @@ void TestSORT(bool display)
 			<< tb.box.width << "," << tb.box.height << endl;
     
     // ros 
-    int sort_bbox_x = frameTrackingResult.box.x;
-    int sort_bbox_y = frameTrackingResult.box.y;
-    int sort_bbox_w = frameTrackingResult.box.width;
-    int sort_bbox_h = frameTrackingResult.box.height;
+    Rect_<float> box = frameTrackingResult.box;
     
     getdetData.clear();
     detData.clear();
