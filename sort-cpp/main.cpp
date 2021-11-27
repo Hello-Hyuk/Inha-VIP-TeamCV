@@ -42,7 +42,7 @@ using namespace cv;
 typedef struct TrackingBox
 {
 	int frame;
-	int id;
+	int id = 0;
 	Rect_<float> box;
 }TrackingBox;
 
@@ -289,12 +289,18 @@ void TestSORT(bool display)
 		cycle_time = (double)(getTickCount() - start_time);
 		total_time += cycle_time / getTickFrequency();
 
-		// frame 별 result 
+		// tracker 별 result 
 		cout << Frame << " frame result" << endl;
 		for (auto tb : frameTrackingResult)
 			cout << tb.frame << "," << tb.id << "," 
 			<< tb.box.x << "," << tb.box.y << "," 
 			<< tb.box.width << "," << tb.box.height << endl;
+    
+    // ros 
+    int sort_bbox_x = frameTrackingResult.box.x;
+    int sort_bbox_y = frameTrackingResult.box.y;
+    int sort_bbox_w = frameTrackingResult.box.width;
+    int sort_bbox_h = frameTrackingResult.box.height;
     
     getdetData.clear();
     detData.clear();
