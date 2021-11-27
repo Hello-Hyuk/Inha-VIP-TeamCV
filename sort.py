@@ -219,6 +219,15 @@ class Sort(object):
   def __init__(self, max_age=1, min_hits=3, iou_threshold=0.3):
     """
     Sets key parameters for SORT
+    
+    hits : int
+        Total number of measurement updates.
+    age : int
+        Total number of frames since first occurance.
+    max_age : int
+        The maximum number of consecutive misses before the track state is
+        set to `Deleted`.
+        트랙 상태가 '삭제됨'으로 설정되기 전까지의 최대 연속 누락 횟수
     """
     self.max_age = max_age
     self.min_hits = min_hits
@@ -230,6 +239,9 @@ class Sort(object):
     """
     Params:
       dets - a numpy array of detections in the format [[x1,y1,x2,y2,score],[x1,y1,x2,y2,score],...]
+      x1,y1,x2,y2?
+      score = Pr(object) * IOU(truth & pred)
+      
     Requires: this method must be called once for each frame even with empty detections (use np.empty((0, 5)) for frames without detections).
     Returns the a similar array, where the last column is the object ID.
 
@@ -248,6 +260,14 @@ class Sort(object):
     trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
     for t in reversed(to_del):
       self.trackers.pop(t)
+    
+    """
+     # hungarian algorithm(using IOU matching)을 통해 3가지로 나눈다
+      matched tracks
+      unmatched detections -> New tracks
+      unmatched tracks -> deleted
+    
+    """
     matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks, self.iou_threshold)
 
     # update matched trackers with assigned detections
@@ -285,26 +305,35 @@ def parse_args():
                         type=int, default=3)
     parser.add_argument("--iou_threshold", help="Minimum IOU for match.", type=float, default=0.3)
     args = parser.parse_args()
+    
     return args
 
 if __name__ == '__main__':
   # all train
   args = parse_args()
+  #true || false
   display = args.display
   phase = args.phase
   total_time = 0.0
   total_frames = 0
   colours = np.random.rand(32, 3) #used only for display
+  #arg display = true 시 실행
   if(display):
     if not os.path.exists('mot_benchmark'):
       print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    (https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s /path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
       exit()
+    # 즉시 반응하는 그림 그리기 ioff와 반대
     plt.ion()
     fig = plt.figure()
     ax1 = fig.add_subplot(111, aspect='equal')
-
+  """
+    These are subplot grid parameters encoded as a single integer. 
+    For example, "111" means "1x1 grid, first subplot" and "234" means "2x3 grid, 4th subplot".
+    Alternative form for add_subplot(111) is add_subplot(1, 1, 1).
+  """
   if not os.path.exists('output'):
     os.makedirs('output')
+  #pattern : data/train/*/det/det/txt 
   pattern = os.path.join(args.seq_path, phase, '*', 'det', 'det.txt')
   for seq_dets_fn in glob.glob(pattern):
     mot_tracker = Sort(max_age=args.max_age, 
