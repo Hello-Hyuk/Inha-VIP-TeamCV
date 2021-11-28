@@ -35,12 +35,15 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "ros/ros.h"
+#include "ros_sort/trackingbox.h"
 
 using namespace std;
 using namespace cv;
 
 float ROI[2][4] = { {457, 280}, {612, 280}, {147, 720}, {955, 720} };
 
+float src_width = 1920;
+float src_height = 1080;
 
 typedef struct TrackingBox
 {
@@ -144,6 +147,31 @@ void TestSORT(bool display)
 
       // ros로 부터 가져오는 data값
       vector<vector<TrackingBox>> getdetData;
+      /*
+      norm_cx
+      norm_cy
+      norm_w
+      norm_h
+      d_frame
+      d_id
+      */
+      vector<TrackingBox> yoloData;
+      TrackingBox tb;
+      for(;size()){
+         // float width = (src_width * norm_w);
+         // float height = (src_height * norm_h);
+         // float x = src_width * norm_cx - width / 2;
+         // float y = src_height * norm_cy - height / 2;
+         tb.box.width.push_back(src_width * norm_w[i]);
+         tb.box.height.push_back(src_height * norm_h[i]);
+         tb.box.x.push_back(src_width * norm_cx[i] - width[i] / 2);
+         tb.box.y.push_back(src_height * norm_cy[i] - height[i] / 2);
+         tb.frame.push_back(d_frame[i]);
+         tb.frame.push_back(d_id[i]);
+         yoloData.push_back(tb);
+      }
+      getdetData.push_back(yoloData);
+      
       vector<TrackingBox> detData;
       if (total_frames == getdetData.frame) {
          break;
@@ -156,9 +184,6 @@ void TestSORT(bool display)
       double Frame = frame_count;
 
       // 1. input real-time bbox
-      float x_min, y_min, x_max, y_max;
-
-
       vector<vector<TrackingBox>> detFrameData;
       TrackingBox temptb;
       for (unsigned int i = 0; i < getdetData[0].size(); i++) {
@@ -333,9 +358,12 @@ void TestSORT(bool display)
 
       // ros 
       Rect_<float> box = frameTrackingResult.box;
-      ros::NodeHandle n;
-      ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
-      ros::Rate rate(10);
+      ros::NodeHandle nh;
+      // ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
+      // ros::Rate rate(10);
+      ros::gFacePublisher = nh.advertise<perception::TrackingBox>(“face”,1);
+      perception::TrackingBox trackingbox;
+      
       int count = 0;
       while (ros::ok()) {
          std_msgs::Rect_<float> bbox;

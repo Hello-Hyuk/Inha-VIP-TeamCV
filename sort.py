@@ -222,12 +222,16 @@ class Sort(object):
     
     hits : int
         Total number of measurement updates.
+        측정이 update된 횟수
     age : int
         Total number of frames since first occurance.
+        
     max_age : int
         The maximum number of consecutive misses before the track state is
         set to `Deleted`.
+        Maximum number of frames to keep alive a track without associated detections
         트랙 상태가 '삭제됨'으로 설정되기 전까지의 최대 연속 누락 횟수
+        연결된 탐지 없이 트랙을 활성 상태로 유지하기 위한 최대 프레임 수
     """
     self.max_age = max_age
     self.min_hits = min_hits
@@ -284,7 +288,7 @@ class Sort(object):
         if (trk.time_since_update < 1) and (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
           ret.append(np.concatenate((d,[trk.id+1])).reshape(1,-1)) # +1 as MOT benchmark requires positive
         i -= 1
-        # remove dead tracklet
+        # remove dead tracklet(단편적 궤적)
         if(trk.time_since_update > self.max_age):
           self.trackers.pop(i)
     if(len(ret)>0):
@@ -333,15 +337,17 @@ if __name__ == '__main__':
   """
   if not os.path.exists('output'):
     os.makedirs('output')
-  #pattern : data/train/*/det/det/txt 
+    
+  #pattern : data\train\*\det\det.txt
   pattern = os.path.join(args.seq_path, phase, '*', 'det', 'det.txt')
   for seq_dets_fn in glob.glob(pattern):
     mot_tracker = Sort(max_age=args.max_age, 
                        min_hits=args.min_hits,
                        iou_threshold=args.iou_threshold) #create instance of the SORT tracker
     seq_dets = np.loadtxt(seq_dets_fn, delimiter=',')
+                      #pattern 에서 * 부터 마지막 
     seq = seq_dets_fn[pattern.find('*'):].split(os.path.sep)[0]
-    
+                                          # 폴더,파일 이름 별로 분리 후 제일 앞 
     with open(os.path.join('output', '%s.txt'%(seq)),'w') as out_file:
       print("Processing %s."%(seq))
       for frame in range(int(seq_dets[:,0].max())):
@@ -360,7 +366,7 @@ if __name__ == '__main__':
         trackers = mot_tracker.update(dets)
         cycle_time = time.time() - start_time
         total_time += cycle_time
-
+        
         for d in trackers:
           print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1'%(frame,d[4],d[0],d[1],d[2]-d[0],d[3]-d[1]),file=out_file)
           if(display):
