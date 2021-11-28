@@ -34,31 +34,54 @@
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "ros/ros.h"
+
 using namespace std;
 using namespace cv;
 
+float ROI[2][4] = { {457, 280}, {612, 280}, {147, 720}, {955, 720} };
 
 
 typedef struct TrackingBox
 {
-	int frame;
-	int id = 0;
-	Rect_<float> box;
+   int frame;
+   int id = 0;
+   Rect_<float> box;
 }TrackingBox;
 
 
 // Computes IOU between two bounding boxes
 double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 {
-	float in = (bb_test & bb_gt).area();
-	float un = bb_test.area() + bb_gt.area() - in;
+   float in = (bb_test & bb_gt).area();
+   float un = bb_test.area() + bb_gt.area() - in;
 
-	if (un < DBL_EPSILON)
-		return 0;
+   if (un < DBL_EPSILON)
+      return 0;
 
-	return (double)(in / un);
+   return (double)(in / un);
 }
 
+
+int[] eqation(int y) {
+   int x_range[2];
+   x_range[0] = ((y - ROI[1][2]) * (ROI[0][0] - ROI[0][2]) / (ROI[1][0] - ROI[1][2])) + ROI[0][2];
+   x_range[1] = ((y - ROI[1][1]) * (ROI[0][3] - ROI[0][1]) / (ROI[1][3] - ROI[1][1])) + ROI[0][1];
+
+   return x;
+}
+
+
+bool isInROI(TrackingBox tb) {
+   int x_range[2] = eqation(tb.box.y);
+   if (tb.box.y < 280)
+      return false;
+   else {
+      if (tb.box.x < x_range[0] || tb.box.x > x_range[1])
+         return false;
+   }
+   return true;
+}
 
 // global variables for counting
 #define CNUM 20
@@ -66,252 +89,264 @@ int total_frames = 0;
 double total_time = 0.0;
 
 // gt to compare 
-Rect_<float> bb_center(200,200,400,400);
+Rect_<float> bb_center(200, 200, 400, 400);
 int bb_iou_th = 0.3;
 
 void TestSORT(bool display);
 
 
 
-int main()
+int main(int argc, char **argv)
 {
-	// flag?
-	TestSORT(false);
+   ros::init(argc, argv, "sort_node");
 
-	// Note: time counted here is of tracking procedure, while the running speed bottleneck is opening and parsing detectionFile.
-	cout << "Total Tracking took: " << total_time << " for " << total_frames << " frames or " << ((double)total_frames / (double)total_time) << " FPS" << endl;
+   TestSORT(false);
 
-	return 0;
+   // Note: time counted here is of tracking procedure, while the running speed bottleneck is opening and parsing detectionFile.
+   cout << "Total Tracking took: " << total_time << " for " << total_frames << " frames or " << ((double)total_frames / (double)total_time) << " FPS" << endl;
+
+   return 0;
 }
 
 
 
 void TestSORT(bool display)
 {
-	cout << "Processing " << seqName << "..." << endl;
-	
-	// 변수들
-	
-	// 3. update across frames
-	int frame_count = 0;
-	int max_age = 1;
-	int min_hits = 3;
-	double iouThreshold = 0.3;
-	vector<KalmanTracker> trackers;
-	KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
+   // 변수들
 
-	// variables used in the for-loop
-	vector<Rect_<float>> predictedBoxes;
-	vector<vector<double>> iouMatrix;
-	vector<int> assignment;
-	set<int> unmatchedDetections;
-	set<int> unmatchedTrajectories;
-	set<int> allItems;
-	set<int> matchedItems;
-	vector<cv::Point> matchedPairs;
-	vector<TrackingBox> frameTrackingResult;
-	unsigned int trkNum = 0;
-	unsigned int detNum = 0;
 
-	double cycle_time = 0.0;
-	int64 start_time = 0;
 
-	while (1){
-    // ros로 부터 가져오는 data값
-    vector<TrackingBox> getdetData;
-    vector<TrackingBox> detData;
-    if(total_frames == getdetData.frame){
-      break;
-    }
+   // 3. update across frames
+   int frame_count = 0;
+   int max_age = 1;
+   int min_hits = 3;
+   double iouThreshold = 0.3;
+   vector<KalmanTracker> trackers;
+   KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
 
-    total_frames++;
-		frame_count++;
+   // variables used in the for-loop
+   vector<Rect_<float>> predictedBoxes;
+   vector<vector<double>> iouMatrix;
+   vector<int> assignment;
+   set<int> unmatchedDetections;
+   set<int> unmatchedTrajectories;
+   set<int> allItems;
+   set<int> matchedItems;
+   vector<cv::Point> matchedPairs;
+   vector<TrackingBox> frameTrackingResult;
+   unsigned int trkNum = 0;
+   unsigned int detNum = 0;
 
-    // update frame
-		int Frame = frame_count;
-    
-		// 1. input real-time bbox
-		float tpx, tpy, tpw, tph;
-    TrackingBox temptb;
-    for (auto tb : getdetData)
-      if(GetIOU(bb_center, getdetData[Frame][tb].box) < bb_iou_th){
-        getdetData.[Frame][tb].erase();
+   double cycle_time = 0.0;
+   int64 start_time = 0;
+
+   while (1) {
+
+      // ros로 부터 가져오는 data값
+      vector<vector<TrackingBox>> getdetData;
+      vector<TrackingBox> detData;
+      if (total_frames == getdetData.frame) {
+         break;
       }
-      else{
-        temptb.box = Rect_<float>(Point_<float>(tb.box.x, tb.box.y), 
-                            Point_<float>(tb.box.x + tb.box.width, tb.box.y + tb.box.height));
-		    detData.push_back(temptb);
+
+      total_frames++;
+      frame_count++;
+
+      // update frame
+      double Frame = frame_count;
+
+      // 1. input real-time bbox
+      float x_min, y_min, x_max, y_max;
+
+
+      vector<vector<TrackingBox>> detFrameData;
+      TrackingBox temptb;
+      for (unsigned int i = 0; i < getdetData[0].size(); i++) {
+         if (GetIOU(bb_center, getdetData[0][i].box) < bb_iou_th) {
+            getdetData[0][i].erase();
+         }
+         else {
+            temptb.box = Rect_<float>(Point_<float>(getdetData[0].box.x, getdetData[0].box.y),
+               Point_<float>(getdetData[0].box.x + getdetData[0].box.width, getdetData[0].box.y + getdetData[0].box.height));
+            detData.push_back(temptb);
+            
+         }
       }
-		  
-		vector<vector<TrackingBox>> detFrameData;
-		// frame당 detect 한 bbox값 저장
-		for (auto tb : detData)
-			tempVec.push_back(tb);
-		detFrameData.push_back(tempVec);
-		tempVec.clear();
+      detFrameData.push_back(detData);
+      detData.clear();
+      
 
-    ////////////////main algorithm//////////////////
-    start_time = getTickCount();
+      ////////////////main algorithm//////////////////
+      start_time = getTickCount();
 
-		if (trackers.size() == 0) // the first frame met
-		{
-			// initialize kalman trackers using first detections.
-			for (unsigned int i = 0; i < detFrameData[Frame].size(); i++)
-			{
-				KalmanTracker trk = KalmanTracker(detFrameData[Frame][i].box);
-				cout << "init_trk_kf_count : " << trk.kf_count << endl;
-				cout << "kf_count : " << KalmanTracker::kf_count << endl; 
-				trackers.push_back(trk);
-			}
-			continue;
-		}
+      if (trackers.size() == 0) // the first frame met
+      {
+         // initialize kalman trackers using first detections.
+         for (unsigned int i = 0; i < detFrameData[Frame].size(); i++)
+         {
+            KalmanTracker trk = KalmanTracker(detFrameData[Frame][i].box);
+            cout << "init_trk_kf_count : " << trk.kf_count << endl;
+            cout << "kf_count : " << KalmanTracker::kf_count << endl;
+            trackers.push_back(trk);
+         }
+         continue;
+      }
 
-		///////////////////////////////////////
-		// 3.1. get predicted locations from existing trackers.
-		predictedBoxes.clear();
+      ///////////////////////////////////////
+      // 3.1. get predicted locations from existing trackers.
+      predictedBoxes.clear();
 
-		for (auto it = trackers.begin(); it != trackers.end();)
-		{
-			Rect_<float> pBox = (*it).predict();
-			if (pBox.x >= 0 && pBox.y >= 0)
-			{
-				predictedBoxes.push_back(pBox);
-				it++;
-			}
-			else
-			{
-				it = trackers.erase(it);
-				//cerr << "Box invalid at frame: " << frame_count << endl;
-			}
-		}
+      for (auto it = trackers.begin(); it != trackers.end();)
+      {
+         Rect_<float> pBox = (*it).predict();
+         if (pBox.x >= 0 && pBox.y >= 0)
+         {
+            predictedBoxes.push_back(pBox);
+            it++;
+         }
+         else
+         {
+            it = trackers.erase(it);
+            //cerr << "Box invalid at frame: " << frame_count << endl;
+         }
+      }
 
-		///////////////////////////////////////
-		// 3.2. associate detections to tracked object (both represented as bounding boxes)
-		// dets : detFrameData[Frame]
-		trkNum = predictedBoxes.size();
-		detNum = detFrameData[Frame].size();
+      ///////////////////////////////////////
+      // 3.2. associate detections to tracked object (both represented as bounding boxes)
+      // dets : detFrameData[Frame]
+      trkNum = predictedBoxes.size();
+      detNum = detFrameData[Frame].size();
 
-		iouMatrix.clear();
-		iouMatrix.resize(trkNum, vector<double>(detNum, 0));
+      iouMatrix.clear();
+      iouMatrix.resize(trkNum, vector<double>(detNum, 0));
 
-		for (unsigned int i = 0; i < trkNum; i++) // compute iou matrix as a distance matrix
-		{
-			for (unsigned int j = 0; j < detNum; j++)
-			{
-				// use 1-iou because the hungarian algorithm computes a minimum-cost assignment.
-				iouMatrix[i][j] = 1 - GetIOU(predictedBoxes[i], detFrameData[Frame][j].box);
-			}
-		}
+      for (unsigned int i = 0; i < trkNum; i++) // compute iou matrix as a distance matrix
+      {
+         for (unsigned int j = 0; j < detNum; j++)
+         {
+            // use 1-iou because the hungarian algorithm computes a minimum-cost assignment.
+            iouMatrix[i][j] = 1 - GetIOU(predictedBoxes[i], detFrameData[Frame][j].box);
+         }
+      }
 
-		// solve the assignment problem using hungarian algorithm.
-		// the resulting assignment is [track(prediction) : detection], with len=preNum
-		HungarianAlgorithm HungAlgo;
-		assignment.clear();
-		HungAlgo.Solve(iouMatrix, assignment);
+      // solve the assignment problem using hungarian algorithm.
+      // the resulting assignment is [track(prediction) : detection], with len=preNum
+      HungarianAlgorithm HungAlgo;
+      assignment.clear();
+      HungAlgo.Solve(iouMatrix, assignment);
 
-		// find matches, unmatched_detections and unmatched_predictions
-		unmatchedTrajectories.clear();
-		unmatchedDetections.clear();
-		allItems.clear();
-		matchedItems.clear();
+      // find matches, unmatched_detections and unmatched_predictions
+      unmatchedTrajectories.clear();
+      unmatchedDetections.clear();
+      allItems.clear();
+      matchedItems.clear();
 
-		if (detNum > trkNum) //	there are unmatched detections
-		{
-			for (unsigned int n = 0; n < detNum; n++)
-				allItems.insert(n);
+      if (detNum > trkNum) //   there are unmatched detections
+      {
+         for (unsigned int n = 0; n < detNum; n++)
+            allItems.insert(n);
 
-			for (unsigned int i = 0; i < trkNum; ++i)
-				matchedItems.insert(assignment[i]);
+         for (unsigned int i = 0; i < trkNum; ++i)
+            matchedItems.insert(assignment[i]);
 
-			set_difference(allItems.begin(), allItems.end(),
-				matchedItems.begin(), matchedItems.end(),
-				insert_iterator<set<int>>(unmatchedDetections, unmatchedDetections.begin()));
-		}
-		else if (detNum < trkNum) // there are unmatched trajectory/predictions
-		{
-			for (unsigned int i = 0; i < trkNum; ++i)
-				if (assignment[i] == -1) // unassigned label will be set as -1 in the assignment algorithm
-					unmatchedTrajectories.insert(i);
-		}
-		else
-			;
+         set_difference(allItems.begin(), allItems.end(),
+            matchedItems.begin(), matchedItems.end(),
+            insert_iterator<set<int>>(unmatchedDetections, unmatchedDetections.begin()));
+      }
+      else if (detNum < trkNum) // there are unmatched trajectory/predictions
+      {
+         for (unsigned int i = 0; i < trkNum; ++i)
+            if (assignment[i] == -1) // unassigned label will be set as -1 in the assignment algorithm
+               unmatchedTrajectories.insert(i);
+      }
+      else
+         ;
 
-		// filter out matched with low IOU
-		matchedPairs.clear();
-		for (unsigned int i = 0; i < trkNum; ++i)
-		{
-			if (assignment[i] == -1) // pass over invalid values
-				continue;
-			if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
-			{
-				unmatchedTrajectories.insert(i);
-				unmatchedDetections.insert(assignment[i]);
-			}
-			else
-				matchedPairs.push_back(cv::Point(i, assignment[i]));
-		}
+      // filter out matched with low IOU
+      matchedPairs.clear();
+      for (unsigned int i = 0; i < trkNum; ++i)
+      {
+         if (assignment[i] == -1) // pass over invalid values
+            continue;
+         if (1 - iouMatrix[i][assignment[i]] < iouThreshold)
+         {
+            unmatchedTrajectories.insert(i);
+            unmatchedDetections.insert(assignment[i]);
+         }
+         else
+            matchedPairs.push_back(cv::Point(i, assignment[i]));
+      }
 
-		///////////////////////////////////////
-		// 3.3. updating trackers
+      ///////////////////////////////////////
+      // 3.3. updating trackers
 
-		// update matched trackers with assigned detections.
-		// each prediction is corresponding to a tracker
-		int detIdx, trkIdx;
-		for (unsigned int i = 0; i < matchedPairs.size(); i++)
-		{
-			trkIdx = matchedPairs[i].x;
-			detIdx = matchedPairs[i].y;
-			trackers[trkIdx].update(detFrameData[Frame][detIdx].box);
-		}
+      // update matched trackers with assigned detections.
+      // each prediction is corresponding to a tracker
+      int detIdx, trkIdx;
+      for (unsigned int i = 0; i < matchedPairs.size(); i++)
+      {
+         trkIdx = matchedPairs[i].x;
+         detIdx = matchedPairs[i].y;
+         trackers[trkIdx].update(detFrameData[Frame][detIdx].box);
+      }
 
-		// create and initialise new trackers for unmatched detections
-		for (auto umd : unmatchedDetections)
-		{
-			KalmanTracker tracker = KalmanTracker(detFrameData[Frame][umd].box);
-			cout << "tracker_kf_count : " << tracker.kf_count << endl;
-			cout << "kf_count : " << KalmanTracker::kf_count << endl; 
-			trackers.push_back(tracker);
-		}
+      // create and initialise new trackers for unmatched detections
+      for (auto umd : unmatchedDetections)
+      {
+         KalmanTracker tracker = KalmanTracker(detFrameData[Frame][umd].box);
+         cout << "tracker_kf_count : " << tracker.kf_count << endl;
+         cout << "kf_count : " << KalmanTracker::kf_count << endl;
+         trackers.push_back(tracker);
+      }
 
-		// get trackers' output
-		frameTrackingResult.clear();
-		for (auto it = trackers.begin(); it != trackers.end();)
-		{
-			if (((*it).m_time_since_update < 1) &&
-				((*it).m_hit_streak >= min_hits || frame_count <= min_hits))
-			{
-				TrackingBox res;
-				res.box = (*it).get_state();
-				res.id = (*it).m_id + 1;
-				res.frame = frame_count;
-				frameTrackingResult.push_back(res);
-				it++;
-			}
-			else
-				it++;
+      // get trackers' output
+      frameTrackingResult.clear();
+      for (auto it = trackers.begin(); it != trackers.end();)
+      {
+         if (((*it).m_time_since_update < 1) &&
+            ((*it).m_hit_streak >= min_hits || frame_count <= min_hits))
+         {
+            TrackingBox res;
+            res.box = (*it).get_state();
+            res.id = (*it).m_id + 1;
+            res.frame = frame_count;
+            frameTrackingResult.push_back(res);
+            it++;
+         }
+         else
+            it++;
 
-			// remove dead tracklet
-			if (it != trackers.end() && (*it).m_time_since_update > max_age)
-				it = trackers.erase(it);
-		}
+         // remove dead tracklet
+         if (it != trackers.end() && (*it).m_time_since_update > max_age)
+            it = trackers.erase(it);
+      }
 
-		cycle_time = (double)(getTickCount() - start_time);
-		total_time += cycle_time / getTickFrequency();
+      cycle_time = (double)(getTickCount() - start_time);
+      total_time += cycle_time / getTickFrequency();
 
-		// tracker 별 result 
-		cout << Frame << " frame result" << endl;
-		for (auto tb : frameTrackingResult)
-			cout << tb.frame << "," << tb.id << "," 
-			<< tb.box.x << "," << tb.box.y << "," 
-			<< tb.box.width << "," << tb.box.height << endl;
-    
-    // ros 
-    Rect_<float> box = frameTrackingResult.box;
-    
-    getdetData.clear();
-    detData.clear();
-	}
-	
+      // tracker 별 result 
+      cout << Frame << " frame result" << endl;
+      for (auto tb : frameTrackingResult)
+         cout << tb.frame << "," << tb.id << ","
+         << tb.box.x << "," << tb.box.y << ","
+         << tb.box.width << "," << tb.box.height << endl;
+
+      // ros 
+      Rect_<float> box = frameTrackingResult.box;
+      ros::NodeHandle n;
+      ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
+      ros::Rate rate(10);
+      int count = 0;
+      while (ros::ok()) {
+         std_msgs::Rect_<float> bbox;
+         bbox.data = frameTrackingResult.box;
+         pub.publish(bbox);
+         ros::spinOnce();
+         rate.sleep();
+         ++count;
+      }
+
+      getdetData.clear();
+   }
+
 }
-
-// default bbox 와 IOU 비교하여 잘못 detect된 IOU 제거하기
