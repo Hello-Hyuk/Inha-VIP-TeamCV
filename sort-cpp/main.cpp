@@ -354,10 +354,10 @@ void TestSORT(bool display)
 
 
       ////// ros publisher "custom msg"
-      float pt_x = Perpective_trans_bbox[pt_bbox_cnt].box.x;
-      float pt_y = Perpective_trans_bbox[pt_bbox_cnt].box.y;
-      float pt_width = Perpective_trans_bbox[pt_bbox_cnt].box.width;
-      float pt_height = Perpective_trans_bbox[pt_bbox_cnt++].box.height;
+      float pt_x = Perpective_trans_bbox[Frame].box.x;
+      float pt_y = Perpective_trans_bbox[Frame].box.y;
+      float pt_width = Perpective_trans_bbox[Frame].box.width;
+      float pt_height = Perpective_trans_bbox[Frame].box.height;
       
       ///// 수정 필요 /////
       ros::NodeHandle nh;
