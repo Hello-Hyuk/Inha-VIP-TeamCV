@@ -91,18 +91,11 @@ bool isInROI(TrackingBox tb) {
 int total_frames = 0;
 double total_time = 0.0;
 
-// gt to compare 
-Rect_<float> bb_center(200, 200, 400, 400);
-int bb_iou_th = 0.3;
-
 void TestSORT(bool display);
-
-
 
 int main(int argc, char **argv)
 {
    ros::init(argc, argv, "sort_node");
-
    TestSORT(false);
 
    // Note: time counted here is of tracking procedure, while the running speed bottleneck is opening and parsing detectionFile.
@@ -115,11 +108,7 @@ int main(int argc, char **argv)
 
 void TestSORT(bool display)
 {
-   // 변수들
-
-
-
-   // 3. update across frames
+   // frame 관련 parameter
    int frame_count = 0;
    int max_age = 1;
    int min_hits = 3;
@@ -146,6 +135,7 @@ void TestSORT(bool display)
    while (1) {
 
       // ros로 부터 가져오는 data값
+      vector<TrackingBox> yoloData;
       vector<vector<TrackingBox>> getdetData;
       /*
       norm_cx
@@ -155,7 +145,7 @@ void TestSORT(bool display)
       d_frame
       d_id
       */
-      vector<TrackingBox> yoloData;
+      
       TrackingBox tb;
       for(;size()){
          // float width = (src_width * norm_w);
@@ -325,6 +315,8 @@ void TestSORT(bool display)
       }
 
       // get trackers' output
+      vector<TrackingBox> Perpective_trans_bbox;
+      int pt_bbox_cnt = 0;
       frameTrackingResult.clear();
       for (auto it = trackers.begin(); it != trackers.end();)
       {
@@ -336,6 +328,9 @@ void TestSORT(bool display)
             res.id = (*it).m_id + 1;
             res.frame = frame_count;
             frameTrackingResult.push_back(res);
+            if(isInROI(res)){
+               Perpective_trans_bbox.push_back(res);
+            }
             it++;
          }
          else
@@ -345,6 +340,7 @@ void TestSORT(bool display)
          if (it != trackers.end() && (*it).m_time_since_update > max_age)
             it = trackers.erase(it);
       }
+      
 
       cycle_time = (double)(getTickCount() - start_time);
       total_time += cycle_time / getTickFrequency();
@@ -356,8 +352,14 @@ void TestSORT(bool display)
          << tb.box.x << "," << tb.box.y << ","
          << tb.box.width << "," << tb.box.height << endl;
 
-      // ros 
-      Rect_<float> box = frameTrackingResult.box;
+
+      ////// ros publisher "custom msg"
+      float pt_x = Perpective_trans_bbox[pt_bbox_cnt].box.x;
+      float pt_y = Perpective_trans_bbox[pt_bbox_cnt].box.y;
+      float pt_width = Perpective_trans_bbox[pt_bbox_cnt].box.width;
+      float pt_height = Perpective_trans_bbox[pt_bbox_cnt++].box.height;
+      
+      ///// 수정 필요 /////
       ros::NodeHandle nh;
       // ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
       // ros::Rate rate(10);
@@ -373,7 +375,6 @@ void TestSORT(bool display)
          rate.sleep();
          ++count;
       }
-
       getdetData.clear();
    }
 
