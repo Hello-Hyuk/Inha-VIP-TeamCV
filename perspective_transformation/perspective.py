@@ -8,8 +8,8 @@ height = 1080
 
 def find_distance(bbox):
 
-    cx = bbox[0] + (bbox[2]/2);
-    cy = bbox[1] + (bbox[3]/2);
+    cx = bbox[0] + (bbox[2]/2)
+    cy = bbox[1] + (bbox[3]/2)
     c_position = (cx,cy, 1)
     
     # pts1, pts2 is ROI
@@ -21,10 +21,10 @@ def find_distance(bbox):
     
     # bbox 중점 시점변환
     trans_c_position = np.dot(matrix, c_position)
-    trans_c_position = trans_c_position / trans_c_position[2];
+    trans_c_position = trans_c_position / trans_c_position[2]
     # bbox중점에서의 영상 끝의 거리 계산
     distance_car = 1080 - trans_c_position[1]
     return distance_car
 
-distance = find_distance(bbox);
+distance = find_distance(bbox)
 print("distance",distance)
