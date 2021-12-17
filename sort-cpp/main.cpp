@@ -152,16 +152,9 @@ int testSort(vector<vector<TrackingBox>>& getdetData)
    TrackingBox temptb;
    for (unsigned int i = 0; i < getdetData[0].size(); i++)
    {
-      if (GetIOU(bb_center, getdetData[0][i].box) < bb_iou_th)
-      {
-         getdetData[0][i].erase();
-      }
-      else
-      {
-         temptb.box = Rect_<float>(Point_<float>(getdetData[0].box.x, getdetData[0].box.y),
-                                   Point_<float>(getdetData[0].box.x + getdetData[0].box.width, getdetData[0].box.y + getdetData[0].box.height));
-         detData.push_back(temptb);
-      }
+      temptb.box = Rect_<float>(Point_<float>(getdetData[0].box.x, getdetData[0].box.y),
+                                Point_<float>(getdetData[0].box.x + getdetData[0].box.width, getdetData[0].box.y + getdetData[0].box.height));
+      detData.push_back(temptb);
    }
    detFrameData.push_back(detData);
    detData.clear();
@@ -333,23 +326,6 @@ int testSort(vector<vector<TrackingBox>>& getdetData)
    float pt_width = Perpective_trans_bbox[Frame].box.width;
    float pt_height = Perpective_trans_bbox[Frame].box.height;
 
-   ///// 수정 필요 /////
-   ros::NodeHandle nh;
-   // ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
-   // ros::Rate rate(10);
-   ros::gFacePublisher = nh.advertise<perception::TrackingBox>("face", 1);
-   perception::TrackingBox trackingbox;
-
-   int count = 0;
-   while (ros::ok())
-   {
-      std_msgs::Rect_<float> bbox;
-      bbox.data = frameTrackingResult.box;
-      pub.publish(bbox);
-      ros::spinOnce();
-      rate.sleep();
-      ++count;
-   }
    getdetData.clear();
    yoloData.claer();
 
@@ -368,13 +344,6 @@ void msgcallback4(const sort_VIP::Detector2DArray::ConstPtr& msg){
 
    if (msg->detections.empty() == 0)
    {
-      for (int i = 0; i < sizeof(msg->detections); i++)
-      {
-         float cx = msg->detections[i].bbox.center.x;
-         float cy = msg->detections[i].bbox.center.y;
-         float w = msg->detections[i].bbox.size_x;
-         float h = msg->detections[i].bbox.size_y;
-      }
       TrackingBox tb;
       // size()는 yolo의 한 frame에서 가져온 detect 된 bbox의 개수
       for (int i = 0; i < sizeof(msg->detections); i++)
