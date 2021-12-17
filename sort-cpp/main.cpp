@@ -118,11 +118,12 @@ float* equation(float y) {
 
 
 bool isInROI(TrackingBox tb) {
-   int *x_range = equation(tb.box.y);
-   if (tb.box.y < 280)
+   if (tb.box.y < 419)
       return false;
-   else {
-      if (tb.box.x < x_range[0] || tb.box.x > x_range[1])
+
+   float* x_range = equation(tb.box.y);
+
+   if (tb.box.x < x_range[0] || tb.box.x > x_range[1]){
          return false;
    }
    return true;
