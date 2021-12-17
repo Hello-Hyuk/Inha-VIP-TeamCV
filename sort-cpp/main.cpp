@@ -21,11 +21,9 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ///////////////////////////////////////////////////////////////////////////////
 
-
 #include <iostream>
 #include <fstream>
 #include <iomanip> // to format image names using setw() and setfill()
-#include <io.h>    // to check file existence using POSIX function access(). On Linux include <unistd.h>.
 #include <set>
 
 #include "Hungarian.h"
@@ -35,21 +33,33 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "ros/ros.h"
-#include "ros_sort/trackingbox.h"
+#include <string>
+// darknet_ros_msgs
+#include "sort_VIP/BoundingBox2D.h"
+#include "sort_VIP/ObjectHypothesis.h"
+#include "sort_VIP/Detector2D.h"
+#include "sort_VIP/Detector2DArray.h"
 
 using namespace std;
 using namespace cv;
 
+// global variables for counting
+#define CNUM 20
+int total_frames = 0;
+double total_time = 0.0;
 
 float ROI[4][2] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
 
 float src_width = 1920;
 float src_height = 1080;
 
-
 // ros로 부터 가져오는 data값
-vector<TrackingBox> yoloData;
-vector<vector<TrackingBox>> getdetData;
+typedef struct TrackingBox
+{
+   int frame;
+   int id = 0;
+   Rect_<float> box;
+}TrackingBox;
 
 // yolo로 부터 받아오는 param을 저장하는 structure
 typedef struct YoloDetectBox{
@@ -60,6 +70,10 @@ typedef struct YoloDetectBox{
    int d_frame;
    int d_id;
 }YoloDetectBox;
+
+// subscribe 한 data 저장 vector
+vector<TrackingBox> yoloData;
+vector<vector<TrackingBox>> getdetData;
 
 /////////////testSort() params////////////////////
 // frame 관련 parameter
@@ -87,14 +101,6 @@ double cycle_time = 0.0;
 int64 start_time = 0;
 ////////////////////////////////////////////////////
 
-typedef struct TrackingBox
-{
-   int frame;
-   int id = 0;
-   Rect_<float> box;
-}TrackingBox;
-
-
 // Computes IOU between two bounding boxes
 double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 {
@@ -108,79 +114,42 @@ double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 }
 
 
-float* equation(float y) {
-    float x_range[2];
-    x_range[0] = ((y - ROI[2][1]) * (ROI[0][0] - ROI[2][0]) / (ROI[0][1] - ROI[2][1])) + ROI[2][0];
-    x_range[1] = ((y - ROI[1][1]) * (ROI[3][0] - ROI[1][0]) / (ROI[3][1] - ROI[1][1])) + ROI[1][0];
+int eqation(int y) {
+   int x_range[2];
+   x_range[0] = ((y - ROI[1][2]) * (ROI[0][0] - ROI[0][2]) / (ROI[1][0] - ROI[1][2])) + ROI[0][2];
+   x_range[1] = ((y - ROI[1][1]) * (ROI[0][3] - ROI[0][1]) / (ROI[1][3] - ROI[1][1])) + ROI[0][1];
 
-    return x_range;
+   return x_range;
 }
 
 
 bool isInROI(TrackingBox tb) {
-   if (tb.box.y < 419)
+   int x_range[2] = eqation(tb.box.y);
+   if (tb.box.y < 280)
       return false;
-
-   float* x_range = equation(tb.box.y);
-
-   if (tb.box.x < x_range[0] || tb.box.x > x_range[1]){
+   else {
+      if (tb.box.x < x_range[0] || tb.box.x > x_range[1])
          return false;
    }
    return true;
 }
 
-// global variables for counting
-#define CNUM 20
-int total_frames = 0;
-double total_time = 0.0;
 
-void testSort(bool display);
-
-int main(int argc, char **argv)
+void printbox(float x, float y, float w, float h)
 {
-   ros::init(argc, argv, "sort_node");
-
-   //////////// 코드 수정 ////////////
-   TrackingBox tb;
-   // size()는 yolo의 한 frame에서 가져온 detect 된 bbox의 개수
-   for (; size())
-   {
-      // float width = (src_width * norm_w);
-      // float height = (src_height * norm_h);
-      // float x = src_width * norm_cx - width / 2;
-      // float y = src_height * norm_cy - height / 2;
-      tb.box.width.push_back(w[i]);
-      tb.box.height.push_back(h[i]);
-      tb.box.x.push_back(x[i] - w[i] / 2);
-      tb.box.y.push_back(y[i] - h[i] / 2);
-      tb.frame.push_back(d_frame[i]);
-      tb.frame.push_back(d_id[i]);
-      yoloData.push_back(tb);
-   }
-   getdetData.push_back(yoloData);
-
-   testSort(getdetData);
-   ////////////////////////////////////
-
-   // Note: time counted here is of tracking procedure, while the running speed bottleneck is opening and parsing detectionFile.
-   cout << "Total Tracking took: " << total_time << " for " << total_frames << " frames or " << ((double)total_frames / (double)total_time) << " FPS" << endl;
-
-   return 0;
+    printf("x : %.3f\n", x);
+    printf("y : %.3f\n", y);
+    printf("w : %.3f\n", w);
+    printf("h : %.3f\n", h);
 }
 
-
-
-void testSort(vector<vector<TrackingBox>>& getdetData)
+int testSort(vector<vector<TrackingBox>>& getdetData)
 {
    vector<TrackingBox> detData;
    if (total_frames == getdetData.frame)
    {
       break;
    }
-
-   total_frames++;
-   frame_count++;
-
    // update frame
    double Frame = frame_count;
 
@@ -388,4 +357,81 @@ void testSort(vector<vector<TrackingBox>>& getdetData)
       ++count;
    }
    getdetData.clear();
+   yoloData.claer();
+
+   return 100000;
+}
+
+/*변수 꺼내오는 예제*/
+void msgcallback4(const sort_VIP::Detector2DArray::ConstPtr& msg){
+
+   total_frames++;
+   frame_count++;
+
+   unsigned int d_frame = msg->header.seq;
+   printf("d_frame : %d\n", d_frame);
+   printf("%d", sizeof(msg->detections));
+
+   if (msg->detections.empty() == 0)
+   {
+      for (int i = 0; i < sizeof(msg->detections); i++)
+      {
+         float cx = msg->detections[i].bbox.center.x;
+         float cy = msg->detections[i].bbox.center.y;
+         float w = msg->detections[i].bbox.size_x;
+         float h = msg->detections[i].bbox.size_y;
+      }
+      TrackingBox tb;
+      // size()는 yolo의 한 frame에서 가져온 detect 된 bbox의 개수
+      for (int i = 0; i < sizeof(msg->detections); i++)
+      {
+         float cx = msg->detections[i].bbox.center.x;
+         float cy = msg->detections[i].bbox.center.y;
+         float w = msg->detections[i].bbox.size_x;
+         float h = msg->detections[i].bbox.size_y;
+         if (cx == 0 && cy == 0 && w == 0 && h == 0)
+            break;
+         else
+         {
+            tb.box.width.push_back(w[i]);
+            tb.box.height.push_back(h[i]);
+            tb.box.x.push_back(x[i] - w[i] / 2);
+            tb.box.y.push_back(y[i] - h[i] / 2);
+            tb.frame.push_back(d_frame[i]);
+            tb.frame.push_back(d_id[i]);
+            yoloData.push_back(tb);
+         }
+      }
+      getdetData.push_back(yoloData);
+      cout << "test sort result" << endl;
+      cout << testSort(getdetData) << endl;
+    }
+    
+}
+
+int main(int argc, char **argv)
+{
+    /*rosros !! */
+    ros::init(argc, argv, "sort_node");
+    ros::NodeHandle n;
+    ros::Subscriber sub4=n.subscribe<sort_VIP::Detector2DArray>("detections",100,msgcallback4);
+    ros::spin();
+
+    // -> perspective transformation
+    sort_VIP::Detector2DArray::ConstPtr msg; //여기에 담으시면 됩니다 ^^ 
+    ros::Publisher pub=n.advertise<sort_VIP::Detector2DArray>("sort_msg",100);
+    //topic 이름이 sort_msg message 입니다 ^^ 
+    sort_VIP::Detector2DArray::ConstPtr msg1;
+    while(ros::ok){
+        /*담으시면 됩니다 !!*/
+        /*sort/msg 에 msg 만들고 그대로 빌드하면 message 생성되게 setting해놨습니다. 입맛 따라 */
+        //msg1.sorted_cx=?
+        //msg1.sorted_cy=?
+        //msg1.sorted_width=?
+        //msg1.sorted_height=?
+        //msg1.삐리리=10
+        //pub.publish(msg1);
+    }
+
+    return 0;
 }
