@@ -144,10 +144,14 @@ int main(int argc, char **argv)
    // size()는 yolo의 한 frame에서 가져온 detect 된 bbox의 개수
    for (; size())
    {
+      // float width = (src_width * norm_w);
+      // float height = (src_height * norm_h);
+      // float x = src_width * norm_cx - width / 2;
+      // float y = src_height * norm_cy - height / 2;
       tb.box.width.push_back(w[i]);
       tb.box.height.push_back(h[i]);
-      tb.box.x.push_back(x[i] - width[i] / 2);
-      tb.box.y.push_back(y[i] - height[i] / 2);
+      tb.box.x.push_back(x[i] - w[i] / 2);
+      tb.box.y.push_back(y[i] - h[i] / 2);
       tb.frame.push_back(d_frame[i]);
       tb.frame.push_back(d_id[i]);
       yoloData.push_back(tb);
