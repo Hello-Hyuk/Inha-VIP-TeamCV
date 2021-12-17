@@ -41,7 +41,7 @@ using namespace std;
 using namespace cv;
 
 
-float ROI[2][4] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
+float ROI[4][2] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
 
 float src_width = 1920;
 float src_height = 1080;
@@ -108,17 +108,17 @@ double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 }
 
 
-int eqation(int y) {
-   int x_range[2];
-   x_range[0] = ((y - ROI[1][2]) * (ROI[0][0] - ROI[0][2]) / (ROI[1][0] - ROI[1][2])) + ROI[0][2];
-   x_range[1] = ((y - ROI[1][1]) * (ROI[0][3] - ROI[0][1]) / (ROI[1][3] - ROI[1][1])) + ROI[0][1];
+float* equation(float y) {
+    float x_range[2];
+    x_range[0] = ((y - ROI[1][2]) * (ROI[0][0] - ROI[0][2]) / (ROI[1][0] - ROI[1][2])) + ROI[0][2];
+    x_range[1] = ((y - ROI[1][1]) * (ROI[0][3] - ROI[0][1]) / (ROI[1][3] - ROI[1][1])) + ROI[0][1];
 
-   return x;
+    return x_range;
 }
 
 
 bool isInROI(TrackingBox tb) {
-   int x_range[2] = eqation(tb.box.y);
+   int x_range[2] = equation(tb.box.y);
    if (tb.box.y < 280)
       return false;
    else {
