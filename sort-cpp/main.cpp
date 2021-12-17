@@ -40,7 +40,8 @@
 using namespace std;
 using namespace cv;
 
-float ROI[2][4] = { {457, 280}, {612, 280}, {147, 720}, {955, 720} };
+
+float ROI[2][4] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
 
 float src_width = 1920;
 float src_height = 1080;
