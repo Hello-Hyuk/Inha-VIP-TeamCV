@@ -53,10 +53,10 @@ vector<vector<TrackingBox>> getdetData;
 
 // yolo로 부터 받아오는 param을 저장하는 structure
 typedef struct YoloDetectBox{
-   float norm_cx;
-   float norm_cy;
-   float norm_w;
-   float norm_h;
+   float x;
+   float y;
+   float w;
+   float h;
    int d_frame;
    int d_id;
 }YoloDetectBox;
@@ -133,7 +133,7 @@ bool isInROI(TrackingBox tb) {
 int total_frames = 0;
 double total_time = 0.0;
 
-void TestSORT(bool display);
+void testSort(bool display);
 
 int main(int argc, char **argv)
 {
@@ -144,21 +144,17 @@ int main(int argc, char **argv)
    // size()는 yolo의 한 frame에서 가져온 detect 된 bbox의 개수
    for (; size())
    {
-      // float width = (src_width * norm_w);
-      // float height = (src_height * norm_h);
-      // float x = src_width * norm_cx - width / 2;
-      // float y = src_height * norm_cy - height / 2;
-      tb.box.width.push_back(src_width * norm_w[i]);
-      tb.box.height.push_back(src_height * norm_h[i]);
-      tb.box.x.push_back(src_width * norm_cx[i] - width[i] / 2);
-      tb.box.y.push_back(src_height * norm_cy[i] - height[i] / 2);
+      tb.box.width.push_back(w[i]);
+      tb.box.height.push_back(h[i]);
+      tb.box.x.push_back(x[i] - width[i] / 2);
+      tb.box.y.push_back(y[i] - height[i] / 2);
       tb.frame.push_back(d_frame[i]);
       tb.frame.push_back(d_id[i]);
       yoloData.push_back(tb);
    }
    getdetData.push_back(yoloData);
 
-   TestSORT(getdetData);
+   testSort(getdetData);
    ////////////////////////////////////
 
    // Note: time counted here is of tracking procedure, while the running speed bottleneck is opening and parsing detectionFile.
@@ -169,7 +165,7 @@ int main(int argc, char **argv)
 
 
 
-void TestSORT(vector<vector<TrackingBox>>& getdetData)
+void testSort(vector<vector<TrackingBox>>& getdetData)
 {
    vector<TrackingBox> detData;
    if (total_frames == getdetData.frame)
