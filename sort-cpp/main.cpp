@@ -82,7 +82,7 @@ int max_age = 1;
 int min_hits = 3;
 double iouThreshold = 0.3;
 vector<KalmanTracker> trackers;
-KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
+int KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
 
 // variables used in the for-loop
 vector<Rect_<float>> predictedBoxes;
@@ -113,7 +113,6 @@ double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
    return (double)(in / un);
 }
 
-
 float* equation(float y) {
     float x_range[2];
     x_range[0] = ((y - ROI[2][1]) * (ROI[0][0] - ROI[2][0]) / (ROI[0][1] - ROI[2][1])) + ROI[2][0];
@@ -122,19 +121,17 @@ float* equation(float y) {
     return x_range;
 }
 
-
 bool isInROI(TrackingBox tb) {
-    if (tb.box.y < 419)
-        return false;
+   if (tb.box.y < 419)
+      return false;
 
-    float* x_range = equation(tb.box.y);
+   float* x_range = equation(tb.box.y);
 
-    if (tb.box.x < x_range[0] || tb.box.x > x_range[1]) {
-        return false;
-    }
-    return true;
+   if (tb.box.x < x_range[0] || tb.box.x > x_range[1]){
+         return false;
+   }
+   return true;
 }
-
 
 void printbox(float x, float y, float w, float h)
 {
@@ -147,10 +144,6 @@ void printbox(float x, float y, float w, float h)
 int testSort(vector<vector<TrackingBox>>& getdetData)
 {
    vector<TrackingBox> detData;
-   if (total_frames == getdetData.frame)
-   {
-      break;
-   }
    // update frame
    double Frame = frame_count;
 
@@ -344,7 +337,7 @@ int testSort(vector<vector<TrackingBox>>& getdetData)
    ros::NodeHandle nh;
    // ros::Publisher pub = n.advertise<Rect_<float>>("sort_bbox", 1000);
    // ros::Rate rate(10);
-   ros::gFacePublisher = nh.advertise<perception::TrackingBox>(“face”, 1);
+   ros::gFacePublisher = nh.advertise<perception::TrackingBox>("face", 1);
    perception::TrackingBox trackingbox;
 
    int count = 0;
