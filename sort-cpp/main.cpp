@@ -114,24 +114,25 @@ double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt)
 }
 
 
-int eqation(int y) {
-   int x_range[2];
-   x_range[0] = ((y - ROI[1][2]) * (ROI[0][0] - ROI[0][2]) / (ROI[1][0] - ROI[1][2])) + ROI[0][2];
-   x_range[1] = ((y - ROI[1][1]) * (ROI[0][3] - ROI[0][1]) / (ROI[1][3] - ROI[1][1])) + ROI[0][1];
+float* equation(float y) {
+    float x_range[2];
+    x_range[0] = ((y - ROI[2][1]) * (ROI[0][0] - ROI[2][0]) / (ROI[0][1] - ROI[2][1])) + ROI[2][0];
+    x_range[1] = ((y - ROI[1][1]) * (ROI[3][0] - ROI[1][0]) / (ROI[3][1] - ROI[1][1])) + ROI[1][0];
 
-   return x_range;
+    return x_range;
 }
 
 
 bool isInROI(TrackingBox tb) {
-   int x_range[2] = eqation(tb.box.y);
-   if (tb.box.y < 280)
-      return false;
-   else {
-      if (tb.box.x < x_range[0] || tb.box.x > x_range[1])
-         return false;
-   }
-   return true;
+    if (tb.box.y < 419)
+        return false;
+
+    float* x_range = equation(tb.box.y);
+
+    if (tb.box.x < x_range[0] || tb.box.x > x_range[1]) {
+        return false;
+    }
+    return true;
 }
 
 
