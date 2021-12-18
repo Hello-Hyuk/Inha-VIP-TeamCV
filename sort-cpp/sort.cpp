@@ -39,10 +39,16 @@ using namespace cv;
 
 typedef struct TrackingBox
 {
-	int frame;
-	int id;
+	unsigned int frame;
+	unsigned int id;
 	Rect_<float> box;
 }TrackingBox;
+
+// ROI info param
+float ROI[4][2] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
+
+float src_width = 1920;
+float src_height = 1080;
 
 
 // Computes IOU between two bounding boxes
@@ -90,11 +96,6 @@ void printbox(float x, float y, float w, float h)
 int total_frames = 0;
 double total_time = 0.0;
 
-float ROI[4][2] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
-
-float src_width = 1920;
-float src_height = 1080;
-
 void TestSORT(string seqName, bool display);
 
 // 3. update across frames
@@ -103,7 +104,7 @@ int max_age = 1;
 int min_hits = 3;
 double iouThreshold = 0.3;
 vector<KalmanTracker> trackers;
-KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
+int KalmanTracker::kf_count = 0; // tracking id relies on this, so we have to reset it in each seq.
 
 // variables used in the for-loop
 vector<Rect_<float>> predictedBoxes;
@@ -139,12 +140,10 @@ void msgcallback4(const sort_VIP::Detector2DArray::ConstPtr& msg){
     frame_count++;
 
     unsigned int d_frame = msg->header.seq;
-    printf("d_frame : %d\n", d_frame);
-    printf("%d", sizeof(msg->detections));
 
     if (msg->detections.empty() == 0)
     {
-        for (int i = 0; i < sizeof(msg->detections); i++)
+        for (int i =0; i<sizeof(msg->detections) ; i++)
         {
             TrackingBox tb;
 
@@ -156,8 +155,8 @@ void msgcallback4(const sort_VIP::Detector2DArray::ConstPtr& msg){
             tpy = cy - tph / 2;
 
             // d_id 받아와야함
-            tb.frame.push_back(d_frame[i]);
-            tb.id.push_back(d_id[i]);
+            tb.frame = (d_frame);
+            tb.id = (0);
             tb.box = Rect_<float>(Point_<float>(tpx, tpy), Point_<float>(tpx + tpw, tpy + tph));
             getdetData.push_back(tb);
         }
@@ -168,20 +167,21 @@ void msgcallback4(const sort_VIP::Detector2DArray::ConstPtr& msg){
                 tempVec.push_back(tb);
         getdetFrameData.push_back(tempVec);
         tempVec.clear();
+
+        TestSORT(getdetFrameData);
     }
-    TestSORT(getdetFrameData);
+    
 }
 
 void TestSORT(vector<vector<TrackingBox>>& detFrameData)
 {
-	cout << "Processing " << seqName << "..." << endl;
 	//////////////////////////////////////////////
 	// main loop
 	int fi = 0; fi < maxFrame; fi++;
     
 	total_frames++;
     frame_count++;
-    int frameIdx = fraframe_count-1;
+    int frameIdx = frame_count-1;
     cout << frame_count << endl;
 
     // I used to count running time using clock(), but found it seems to conflict with cv::cvWaitkey(),
@@ -305,6 +305,7 @@ void TestSORT(vector<vector<TrackingBox>>& detFrameData)
 
     // get trackers' output
     frameTrackingResult.clear();
+    vector<TrackingBox> Perpective_trans_bbox;
     for (auto it = trackers.begin(); it != trackers.end();)
     {
         if (((*it).m_time_since_update < 1) &&
