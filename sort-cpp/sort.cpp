@@ -90,8 +90,12 @@ void printbox(float x, float y, float w, float h)
 int total_frames = 0;
 double total_time = 0.0;
 
-void TestSORT(string seqName, bool display);
+float ROI[4][2] = { {812, 419}, {1088, 423}, {216, 1080}, {1698, 1080} };
 
+float src_width = 1920;
+float src_height = 1080;
+
+void TestSORT(string seqName, bool display);
 
 // 3. update across frames
 int frame_count = 0;
