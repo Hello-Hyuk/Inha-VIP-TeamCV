@@ -330,7 +330,11 @@ void TestSORT(vector<vector<TrackingBox>>& detFrameData)
     }
 
     // result
-    Perpective_trans_bbox[frameIdx].box;
+    cout << "///////////SORT RESULT" << endl;
+    cout << "box info\n" << "x :" << Perpective_trans_bbox[frameIdx].box.x << endl;
+    cout << "y : " << Perpective_trans_bbox[frameIdx].box.y << endl;
+    cout << "width : " << Perpective_trans_bbox[frameIdx].box.width << endl;
+    cout << "height : " << Perpective_trans_bbox[frameIdx].box.height << endl;            
 }
 
 int main(int argc, char **argv)
