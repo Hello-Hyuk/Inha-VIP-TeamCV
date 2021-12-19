@@ -3,7 +3,10 @@ import cv2 as cv
 import numpy as np
 
 from std_msgs.msg import String
-from sort_VIP.msg import SortedBbox
+from BoundingBox2D.msg import BoundingBox2D
+from Detector2D.msg import Detector2D
+from Detector2DArray.msg import Detector2DArray
+from ObjectiveHypothesis.msg import ObjectiveHypothesis
 
 bbox = [1, 2, 3, 4] # [x, y, w, h] 
 width = 1920
@@ -18,7 +21,7 @@ def callback():
     hi=1
 
 def listener():
-    rospy.Subscriber('sort_msg',SortedBbox,callback)
+    rospy.Subscriber('detector', Detector2DArray, callback)
     rospy.spin()
 
 def find_distance(bbox):
