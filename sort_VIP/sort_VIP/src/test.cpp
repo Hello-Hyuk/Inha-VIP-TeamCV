@@ -28,46 +28,22 @@
 #include <string>
 
 #include "ros/ros.h"
+#include "sort_VIP/SortedBbox.h"
 
 using namespace std;
-
-int main(int argc, char **argv)
-{
-    /*rosros !! */
-    ros::init(argc, argv, "sort_node");
-    ros::NodeHandle n;
-    ros::Subscriber sub4=n.subscribe<sort_VIP::Detector2DArray>("detections",100,msgcallback4);
-    ros::spin();
-
-    // -> perspective transformation
-    sort_VIP::Detector2DArray::ConstPtr msg; //여기에 담으시면 됩니다 ^^ 
-    ros::Publisher pub=n.advertise<sort_VIP::Detector2DArray>("sort_msg",100);
-    //topic 이름이 sort_msg message 입니다 ^^ 
-    sort_VIP::Detector2DArray::ConstPtr msg1;
-    while(ros::ok()){
-        /*담으시면 됩니다 !!*/
-        /*sort/msg 에 msg 만들고 그대로 빌드하면 message 생성되게 setting해놨습니다. 입맛 따라 */
-        //msg1.sorted_cx=100
-        //msg1.sorted_cy=200
-        //msg1.sorted_width=250
-        //msg1.sorted_height=250
-        //msg1.삐리리=10
-        //pub.publish(msg1);
-    }
-    return 0;
-}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "simple_publisher_node_custom_msgs");
     ros::NodeHandle n;
-    ros::Publisher pub = n.advertise<sort_VIP::noetic_basics_part_1_msg>("noetic_basics_part_1/message", 1000);
+    ros::Publisher pub = n.advertise<sort_VIP::SortedBbox>("sort_VIP/msg", 1000);
     ros::Rate loop_rate(10);
     while (ros::ok())
     {
-        noetic_basics_part_1::noetic_basics_part_1_msg msg;
-        msg.A = 1;
-        msg.B = 2;
-        msg.C = 3;
+        sort_VIP::SortedBbox msg;
+        msg.sorted_cx=100
+        msg.sorted_cy=200
+        msg.sorted_width=250
+        msg.sorted_height=250
 
         pub.publish(msg);
         ros::spinOnce();
