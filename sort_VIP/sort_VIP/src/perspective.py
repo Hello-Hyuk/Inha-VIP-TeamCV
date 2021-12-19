@@ -1,10 +1,28 @@
+import rospy
 import cv2 as cv
 import numpy as np
 
-bbox = [1, 2, 3, 4] # [x, y, w, h]
+from std_msgs.msg import String
+from BoundingBox2D.msg import BoundingBox2D
+from Detector2D.msg import Detector2D
+from Detector2DArray.msg import Detector2DArray
+from ObjectiveHypothesis.msg import ObjectiveHypothesis
 
+bbox = [1, 2, 3, 4] # [x, y, w, h] 
 width = 1920
 height = 1080
+
+def talker(distance):
+    pub=rospy.Publisher('destance_msg',String,queue_size=100)
+    rate=rospy.Rate(10)
+    pub.publish(distance)
+
+def callback():
+    hi=1
+
+def listener():
+    rospy.Subscriber('detector', Detector2DArray, callback)
+    rospy.spin()
 
 def find_distance(bbox):
     cx = bbox[0] + (bbox[2]/2)
@@ -26,5 +44,9 @@ def find_distance(bbox):
     distance_car = 1080 - trans_c_position[1]
     return distance_car
 
+
+rospy.init_node('perspective_node',anonymous=True)
 distance = find_distance(bbox)
-print("distance",distance)
+talker(distance)
+listener()
+
