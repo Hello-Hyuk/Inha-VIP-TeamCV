@@ -34,6 +34,14 @@
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "ros/ros.h"
+#include <string>
+// darknet_ros_msgs
+#include "sort_VIP/BoundingBox2D.h"
+#include "sort_VIP/ObjectHypothesis.h"
+#include "sort_VIP/Detector2D.h"
+#include "sort_VIP/Detector2DArray.h"
+
 using namespace std;
 using namespace cv;
 
