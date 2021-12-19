@@ -17,6 +17,8 @@ using namespace cv;
 class KalmanTracker
 {
 public:
+	static int kf_count;
+
 	KalmanTracker()
 	{
 		init_kf(StateType());
@@ -48,8 +50,6 @@ public:
 	
 	StateType get_state();
 	StateType get_rect_xysr(float cx, float cy, float s, float r);
-
-	static int kf_count;
 
 	int m_time_since_update;
 	int m_hits;
