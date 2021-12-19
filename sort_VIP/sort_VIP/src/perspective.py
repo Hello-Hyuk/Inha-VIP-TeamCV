@@ -8,7 +8,6 @@ from Detector2D.msg import Detector2D
 from Detector2DArray.msg import Detector2DArray
 from ObjectiveHypothesis.msg import ObjectiveHypothesis
 
-bbox = [1, 2, 3, 4] # [x, y, w, h] 
 width = 1920
 height = 1080
 
@@ -17,9 +16,10 @@ def talker(distance):
     rate=rospy.Rate(10)
     pub.publish(distance)
 
-def callback():
-    hi=1
-
+def callback(msg):
+    bbox = [msg.sorted_cx, msg.sorted_cy, msg.sorted_cx, msg.sorted_cx]  
+    find_distance(bbox)
+    
 def listener():
     rospy.Subscriber('detector', Detector2DArray, callback)
     rospy.spin()
